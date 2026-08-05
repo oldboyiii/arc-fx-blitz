@@ -90,14 +90,14 @@ export default function FXBlitzGame() {
     abi: CONTRACT_ABI,
     functionName: "getLeaderboard",
     args: [BigInt(5)],
-    query: { enabled: CONTRACT_ADDRESS !== "0x50e206F15556f06B374acDa943a7655602AF6494" },
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" },
   });
 
   const { data: totalGames } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: "totalGamesPlayed",
-    query: { enabled: CONTRACT_ADDRESS !== "0x50e206F15556f06B374acDa943a7655602AF6494" },
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" },
   });
 
   const updatePrice = useCallback(() => {
@@ -236,7 +236,7 @@ export default function FXBlitzGame() {
     ? ((position === "buy" ? (price - entryPrice) / entryPrice : (entryPrice - price) / entryPrice) * 100)
     : 0;
 
-  const isContractConfigured = CONTRACT_ADDRESS !== "0x50e206F15556f06B374acDa943a7655602AF6494";
+  const isContractConfigured = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
 
   return (
     <div className="max-w-lg mx-auto bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl">
