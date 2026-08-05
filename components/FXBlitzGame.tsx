@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAccount, useWriteContract, useReadContract, useConnect, useDisconnect } from "wagmi";
 import { keccak256, encodePacked } from "viem";
-import { useConnectors } from "wagmi";
+import { injected } from "wagmi/connectors";
 
 const CONTRACT_ADDRESS = "0x50e206F15556f06B374acDa943a7655602AF6494" as `0x${string}`;
 
@@ -67,7 +67,6 @@ export default function FXBlitzGame() {
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
-  const connectors = useConnectors();
   const { writeContract, isPending: isSubmitting, error: submitError } = useWriteContract();
 
   const [price, setPrice] = useState(1.0842);
@@ -244,14 +243,6 @@ export default function FXBlitzGame() {
 
   const isContractConfigured = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
 
-  const handleConnect = () => {
-    if (isFrame) {
-      connect({ connector: connectors[0] });
-    } else {
-      connect({ connector: connectors[1] });
-    }
-  };
-
   const containerClass = isFrame
     ? "w-full min-h-screen bg-[#0a0e1a] text-[#e2e8f0] font-sans"
     : "max-w-lg mx-auto bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl";
@@ -273,7 +264,7 @@ export default function FXBlitzGame() {
               <button onClick={() => disconnect()} className="text-xs text-red-400 hover:text-red-300">Disconnect</button>
             </div>
           ) : (
-            <button onClick={handleConnect} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Connect</button>
+            <button onClick={() => connect({ connector: injected() })} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Connect</button>
           )}
         </div>
       </div>
