@@ -1,1 +1,22 @@
-
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0e1a"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00d4aa" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#00d4aa" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#00d4aa" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="100" y="200" width="1000" height="2" fill="url(#glow)"/>
+  <polyline points="100,400 200,380 300,390 400,350 500,360 600,320 700,340 800,300 900,310 1000,280 1100,290" fill="none" stroke="#00d4aa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="100,400 200,380 300,390 400,350 500,360 600,320 700,340 800,300 900,310 1000,280 1100,290 1100,500 100,500" fill="#00d4aa" fill-opacity="0.08"/>
+  <text x="600" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="600" fill="#ffffff">Arc FX Blitz</text>
+  <text x="600" y="220" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="400" fill="#64748b">30-second USDC/EURC trading sprint</text>
+  <text x="600" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="500" fill="#00d4aa" letter-spacing="2">ARC NETWORK TESTNET  •  SUB-SECOND FINALITY  •  USDC GAS</text>
+  <rect x="520" y="560" width="160" height="36" rx="18" fill="none" stroke="#00d4aa" stroke-width="1.5"/>
+  <text x="600" y="585" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#00d4aa" letter-spacing="1">PLAY NOW</text>
+</svg>
