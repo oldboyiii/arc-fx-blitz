@@ -63,6 +63,7 @@ interface LeaderboardEntry {
 }
 
 export default function FXBlitzGame() {
+  const [isFrame, setIsFrame] = useState(false);
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
@@ -84,6 +85,10 @@ export default function FXBlitzGame() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const priceHistoryRef = useRef<number[]>([1.0842]);
   const tradeLogRef = useRef<TradeLog[]>([]);
+
+  useEffect(() => {
+    setIsFrame(window.self !== window.top);
+  }, []);
 
   const { data: leaderboardData, refetch: refetchLeaderboard } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -238,8 +243,12 @@ export default function FXBlitzGame() {
 
   const isContractConfigured = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
 
+  const containerClass = isFrame
+    ? "w-full min-h-screen bg-[#0a0e1a] text-[#e2e8f0] font-sans"
+    : "max-w-lg mx-auto bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl";
+
   return (
-    <div className="w-full min-h-screen bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl">
+    <div className={containerClass}>
       <div className="flex justify-between items-center px-5 py-4 border-b border-[#1e293b] bg-[#111827]">
         <div>
           <div className="flex items-center gap-2.5">
