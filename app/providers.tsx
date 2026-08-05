@@ -2,8 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { injected } from "wagmi/connectors";
-import { useState, useEffect } from "react";
+import { metaMask } from "wagmi/connectors";
 
 const arcTestnet = {
   id: 5042002,
@@ -16,23 +15,20 @@ const arcTestnet = {
 const config = createConfig({
   chains: [arcTestnet],
   transports: { [arcTestnet.id]: http() },
-  connectors: [injected()],
+  connectors: [
+    metaMask({
+      dappMetadata: {
+        name: "Arc FX Blitz",
+        url: "https://arc-fx-blitz-six.vercel.app",
+      },
+    }),
+  ],
+  storage: null,
 });
 
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [isFrame, setIsFrame] = useState(false);
-
-  useEffect(() => {
-    setIsFrame(window.self !== window.top);
-  }, []);
-
-  // В iframe Wagmi не используем — не оборачиваем в WagmiProvider
-  if (isFrame) {
-    return <>{children}</>;
-  }
-
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
