@@ -1,9 +1,10 @@
 {
   "accountAssociation": {
-    "header": "",
-    "payload": "",
-    "signature": ""
-  },
+    "header": "eyJmaWQiOjEwNzU0NjEsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHg0YzFDMmE4NzYxQkI4YUJiMDU1RWYzMTk4RGVkOGUzQUI4OTAwMTM1In0",
+    "payload": "eyJkb21haW4iOiJhcmMtZngtYmxpdHotc2l4LnZlcmNlbC5hcHAifQ",
+    "signature": "dXieaLmqjpVgH4gKjBNylM62lzqPLrpdH938b6CEv5cckZt7mxMS1Oq92rGFyUzMlf2L5IB9NbyF8LEAbxbF7xw="
+  }
+}
   "frame": {
     "version": "1",
     "name": "Arc FX Blitz",
