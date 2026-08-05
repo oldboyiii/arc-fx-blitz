@@ -11,14 +11,3 @@ body {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0a0e1a; }
 ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-
-[data-rk] {
-  --rk-colors-accentColor: #00d4aa !important;
-  --rk-colors-accentColorForeground: #000 !important;
-  --rk-colors-modalBackground: #111827 !important;
-  --rk-colors-modalText: #e2e8f0 !important;
-  --rk-colors-modalBorder: #1e293b !important;
-  --rk-colors-profileForeground: #111827 !important;
-  --rk-colors-profileAction: #1e293b !important;
-  --rk-colors-profileActionHover: #334155 !important;
-}
