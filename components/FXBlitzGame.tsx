@@ -48,28 +48,15 @@ const CONTRACT_ABI = [
   },
 ] as const;
 
-interface TradeLog {
-  ts: number;
-  dir: boolean;
-  price: number;
-}
+interface TradeLog { ts: number; dir: boolean; price: number; }
 
 interface LeaderboardEntry {
-  player: string;
-  totalScoreBps: bigint;
-  gamesPlayed: bigint;
-  bestGameBps: bigint;
-  lastPlayed: bigint;
+  player: string; totalScoreBps: bigint; gamesPlayed: bigint;
+  bestGameBps: bigint; lastPlayed: bigint;
 }
 
-export default function FXBlitzGame() {
-  const [isFrame, setIsFrame] = useState(false);
-  const [hasWallet, setHasWallet] = useState(false);
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { writeContract, isPending: isSubmitting, error: submitError } = useWriteContract();
-
+// --- Игровая логика (общая) ---
+function useGameLogic() {
   const [price, setPrice] = useState(1.0842);
   const [priceHistory, setPriceHistory] = useState<number[]>([1.0842]);
   const [timer, setTimer] = useState(30.0);
@@ -81,32 +68,10 @@ export default function FXBlitzGame() {
   const [position, setPosition] = useState<"buy" | "sell" | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [flash, setFlash] = useState<"green" | "red" | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const priceHistoryRef = useRef<number[]>([1.0842]);
   const tradeLogRef = useRef<TradeLog[]>([]);
-
-  useEffect(() => {
-    const frame = window.self !== window.top;
-    setIsFrame(frame);
-    setHasWallet(typeof window !== "undefined" && !!(window as any).ethereum);
-  }, []);
-
-  const { data: leaderboardData, refetch: refetchLeaderboard } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: "getLeaderboard",
-    args: [BigInt(5)],
-    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && (!isFrame || hasWallet) },
-  });
-
-  const { data: totalGames } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: CONTRACT_ABI,
-    functionName: "totalGamesPlayed",
-    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && (!isFrame || hasWallet) },
-  });
 
   const updatePrice = useCallback(() => {
     setPrice((prev) => {
@@ -118,157 +83,127 @@ export default function FXBlitzGame() {
     });
   }, []);
 
-  const startGame = () => {
-    setPrice(1.0842);
-    setPriceHistory([1.0842]);
-    priceHistoryRef.current = [1.0842];
-    setTimer(30.0);
-    setTrades(0);
-    setBestTrade(0);
-    setTotalPnl(0);
-    setEntryPrice(null);
-    setPosition(null);
-    setGameOver(false);
-    setTxHash(null);
-    setRunning(true);
+  const startGame = useCallback(() => {
+    setPrice(1.0842); setPriceHistory([1.0842]); priceHistoryRef.current = [1.0842];
+    setTimer(30.0); setTrades(0); setBestTrade(0); setTotalPnl(0);
+    setEntryPrice(null); setPosition(null); setGameOver(false); setRunning(true);
     tradeLogRef.current = [];
 
     intervalRef.current = setInterval(() => {
       setTimer((t) => {
         const next = Math.max(0, parseFloat((t - 0.1).toFixed(1)));
-        if (next <= 0) handleGameEnd();
+        if (next <= 0) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          setRunning(false); setGameOver(true); setTimer(0);
+        }
         return next;
       });
       if (Math.random() > 0.25) updatePrice();
     }, 100);
-  };
-
-  const handleGameEnd = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setRunning(false);
-    setGameOver(true);
-    setTimer(0);
-  };
+  }, [updatePrice]);
 
   useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
-  const makeTrade = (type: "buy" | "sell") => {
+  const makeTrade = useCallback((type: "buy" | "sell") => {
     if (!running) return;
     setFlash(type === "buy" ? "green" : "red");
     setTimeout(() => setFlash(null), 150);
     setTrades((t) => t + 1);
-
     if (position && entryPrice !== null) {
       const raw = position === "buy" ? (price - entryPrice) / entryPrice : (entryPrice - price) / entryPrice;
       const bps = Math.floor(raw * 10000);
       setTotalPnl((p) => p + bps);
       setBestTrade((b) => (Math.abs(bps) > Math.abs(b) ? bps : b));
     }
-
-    setPosition(type);
-    setEntryPrice(price);
+    setPosition(type); setEntryPrice(price);
     tradeLogRef.current.push({ ts: Date.now(), dir: type === "buy", price });
+  }, [running, position, entryPrice, price]);
+
+  return {
+    price, priceHistory, timer, running, trades, bestTrade, totalPnl,
+    entryPrice, position, gameOver, flash,
+    priceHistoryRef, tradeLogRef,
+    startGame, makeTrade,
   };
+}
 
-  const submitScore = () => {
-    if (!isConnected || !address) return;
+// --- График ---
+function Chart({ priceHistory }: { priceHistory: number[] }) {
+  if (priceHistory.length < 2) return null;
+  const w = 480, h = 200;
+  const min = Math.min(...priceHistory) * 0.9995;
+  const max = Math.max(...priceHistory) * 1.0005;
+  const range = max - min || 0.001;
+  const points = priceHistory.map((p, i) => `${(i / 119) * w},${h - ((p - min) / range) * h}`);
+  const isUp = priceHistory[priceHistory.length - 1] >= priceHistory[0];
+  const color = isUp ? "#10b981" : "#ef4444";
+  const [lastX, lastY] = points[points.length - 1].split(",");
 
-    const priceHistoryPacked = priceHistoryRef.current.map((p) => BigInt(Math.floor(p * 10000)));
-    const tradeTimestampsPacked = tradeLogRef.current.map((t) => BigInt(t.ts));
-    const tradeDirectionsPacked = tradeLogRef.current.map((t) => t.dir);
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={`${points.join(" ")} ${w},${h} 0,${h}`} fill="url(#chartGrad)" />
+      <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lastX} cy={lastY} r="4" fill={color} stroke="#0a0e1a" strokeWidth="2" />
+    </svg>
+  );
+}
 
-    const proofHash = keccak256(
-      encodePacked(
-        ["uint256", "uint256", "bytes32", "bytes32", "bytes32"],
-        [
-          BigInt(Math.max(0, totalPnl)),
-          BigInt(trades),
-          keccak256(encodePacked(["uint256[]"], [priceHistoryPacked])),
-          keccak256(encodePacked(["uint256[]"], [tradeTimestampsPacked])),
-          keccak256(encodePacked(["bool[]"], [tradeDirectionsPacked])),
-        ]
-      )
-    );
+// --- Лидерборд ---
+function LeaderboardList({ data, isConfigured }: { data: readonly LeaderboardEntry[] | undefined; isConfigured: boolean }) {
+  const demo = [
+    { rank: 1, player: "0x7a3...f2e1", score: 1240 },
+    { rank: 2, player: "0x9b1...c4a2", score: 980 },
+    { rank: 3, player: "0x3d5...e8b0", score: 720 },
+    { rank: 4, player: "0xf2a...1c9d", score: 410 },
+    { rank: 5, player: "0x1e4...a7f3", score: 230 },
+  ];
+  const entries = isConfigured && data && data.length > 0
+    ? data.map((e, i) => ({ rank: i + 1, player: `${e.player.slice(0, 5)}...${e.player.slice(-4)}`, score: Number(e.totalScoreBps) }))
+    : demo;
 
-    writeContract(
-      {
-        address: CONTRACT_ADDRESS,
-        abi: CONTRACT_ABI,
-        functionName: "submitGame",
-        args: [BigInt(Math.max(0, totalPnl)), BigInt(trades), BigInt(Math.abs(bestTrade)), proofHash],
-      },
-      {
-        onSuccess: (hash) => {
-          setTxHash(hash);
-          refetchLeaderboard();
-        },
-      }
-    );
-  };
+  return (
+    <div>
+      {entries.map((row) => (
+        <div key={row.rank} className="flex justify-between items-center py-2 border-b border-[#1e293b]/60 last:border-0 text-sm">
+          <span className={`w-6 text-center font-medium ${row.rank <= 3 ? "text-[#00d4aa]" : "text-[#64748b]"}`}>{row.rank}</span>
+          <span className="flex-1 pl-2 text-[#e2e8f0] font-mono text-[13px]">{row.player}</span>
+          <span className="font-medium text-[#00d4aa] tabular-nums text-[13px]">+{(row.score / 100).toFixed(1)}%</span>
+        </div>
+      ))}
+      {!isConfigured && <p className="text-[11px] text-[#475569] mt-2 text-center">Demo data — open in browser for live on-chain data</p>}
+    </div>
+  );
+}
 
-  const handleConnect = async () => {
-    if (hasWallet) {
-      try {
-        await connect({ connector: injected() });
-      } catch (err) {
-        console.error("Connect failed:", err);
-        openInMetaMask();
-      }
-    } else {
-      openInMetaMask();
-    }
-  };
-
-  const openInMetaMask = () => {
-    window.open("https://metamask.app.link/dapp/arc-fx-blitz-six.vercel.app", "_blank");
-  };
-
-  const renderChart = () => {
-    if (priceHistory.length < 2) return null;
-    const w = 480;
-    const h = 200;
-    const min = Math.min(...priceHistory) * 0.9995;
-    const max = Math.max(...priceHistory) * 1.0005;
-    const range = max - min || 0.001;
-    const points = priceHistory.map((p, i) => `${(i / 119) * w},${h - ((p - min) / range) * h}`);
-    const isUp = priceHistory[priceHistory.length - 1] >= priceHistory[0];
-    const color = isUp ? "#10b981" : "#ef4444";
-    const [lastX, lastY] = points[points.length - 1].split(",");
-
-    return (
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.15" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polygon points={`${points.join(" ")} ${w},${h} 0,${h}`} fill="url(#chartGrad)" />
-        <polyline points={points.join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx={lastX} cy={lastY} r="4" fill={color} stroke="#0a0e1a" strokeWidth="2" />
-      </svg>
-    );
-  };
-
+// --- UI (общий) ---
+function GameUI({
+  isFrame, isConnected, address, connectNode, submitNode, leaderboardData, totalGames, game,
+}: {
+  isFrame: boolean; isConnected: boolean; address?: string;
+  connectNode: React.ReactNode; submitNode: React.ReactNode;
+  leaderboardData: readonly LeaderboardEntry[] | undefined;
+  totalGames: bigint | undefined;
+  game: ReturnType<typeof useGameLogic>;
+}) {
+  const { price, priceHistory, timer, running, trades, bestTrade, totalPnl, entryPrice, position, gameOver, flash, startGame, makeTrade } = game;
   const currentPnl = entryPrice !== null && position
-    ? ((position === "buy" ? (price - entryPrice) / entryPrice : (entryPrice - price) / entryPrice) * 100)
-    : 0;
+    ? ((position === "buy" ? (price - entryPrice) / entryPrice : (entryPrice - price) / entryPrice) * 100) : 0;
 
-  const isContractConfigured = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
-
-  const containerClass = isFrame
+  const box = isFrame
     ? "w-full min-h-screen bg-[#0a0e1a] text-[#e2e8f0] font-sans"
     : "max-w-lg mx-auto bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl";
 
   return (
-    <div className={containerClass}>
+    <div className={box}>
       <div className="flex justify-between items-center px-5 py-4 border-b border-[#1e293b] bg-[#111827]">
         <div>
           <div className="flex items-center gap-2.5">
@@ -278,23 +213,19 @@ export default function FXBlitzGame() {
           <p className="text-xs text-[#64748b] mt-1">USDC/EURC — Sub-second finality</p>
         </div>
         <div className="flex items-center gap-2">
-          {isConnected ? (
+          {isConnected && address ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#64748b]">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
-              <button onClick={() => disconnect()} className="text-xs text-red-400 hover:text-red-300">Disconnect</button>
+              <span className="text-xs text-[#64748b]">{address.slice(0,6)}...{address.slice(-4)}</span>
+              {connectNode}
             </div>
           ) : (
-            <button onClick={handleConnect} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">
-              {isFrame && !hasWallet ? "Open in MetaMask" : "Connect"}
-            </button>
+            connectNode
           )}
         </div>
       </div>
 
       <div className="flex justify-between items-center px-5 py-2 border-b border-[#1e293b] bg-[#0a0e1a]">
-        <div className={`text-[28px] font-medium tabular-nums leading-none ${timer < 5 && timer > 0 ? "text-red-500" : "text-[#00d4aa]"}`}>
-          {timer.toFixed(1)}
-        </div>
+        <div className={`text-[28px] font-medium tabular-nums leading-none ${timer < 5 && timer > 0 ? "text-red-500" : "text-[#00d4aa]"}`}>{timer.toFixed(1)}</div>
         <div className="text-xs text-[#64748b]">30s sprint</div>
       </div>
 
@@ -312,30 +243,18 @@ export default function FXBlitzGame() {
         )}
         {gameOver && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0a0e1a]/92 backdrop-blur-sm">
-            <div className={`text-[28px] font-medium mb-1 ${totalPnl >= 0 ? "text-[#00d4aa]" : "text-red-500"}`}>{totalPnl >= 0 ? "+" : ""}{(totalPnl / 100).toFixed(2)}%</div>
+            <div className={`text-[28px] font-medium mb-1 ${totalPnl >= 0 ? "text-[#00d4aa]" : "text-red-500"}`}>{totalPnl >= 0 ? "+" : ""}{(totalPnl/100).toFixed(2)}%</div>
             <p className="text-sm text-[#64748b] mb-1">{trades} trades executed</p>
-            <p className="text-xs text-[#475569] mb-4">Best: {bestTrade >= 0 ? "+" : ""}{(bestTrade / 100).toFixed(2)}%</p>
-            {isConnected && isContractConfigured && !isFrame ? (
-              <button onClick={submitScore} disabled={isSubmitting || !!txHash} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                {isSubmitting ? "Confirm in wallet..." : txHash ? "Submitted!" : "Submit to chain"}
-              </button>
-            ) : isFrame ? (
-              <button onClick={openInMetaMask} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all">
-                Open in browser to submit
-              </button>
-            ) : (
-              <p className="text-xs text-[#64748b]">{!isConnected ? "Connect wallet to submit score" : "Configure contract address to submit"}</p>
-            )}
-            {submitError && <p className="text-xs text-red-400 mt-2 max-w-[280px] text-center">{submitError.message}</p>}
-            {txHash && <a href={`https://testnet.arcscan.app/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-xs text-[#00d4aa] mt-2 hover:underline">View on ArcScan →</a>}
+            <p className="text-xs text-[#475569] mb-4">Best: {bestTrade >= 0 ? "+" : ""}{(bestTrade/100).toFixed(2)}%</p>
+            {submitNode}
             <button onClick={startGame} className="mt-4 text-sm text-[#00d4aa] hover:text-[#00f5c4] transition-colors">Play again</button>
           </div>
         )}
-        <div className="absolute top-3 left-4 text-[30px] font-medium text-white tabular-nums z-[5]" style={{ textShadow: "0 0 20px rgba(0,212,170,0.25)" }}>{price.toFixed(4)}</div>
+        <div className="absolute top-3 left-4 text-[30px] font-medium text-white tabular-nums z-[5]" style={{textShadow:"0 0 20px rgba(0,212,170,0.25)"}}>{price.toFixed(4)}</div>
         <div className={`absolute top-3.5 right-4 text-[13px] font-medium px-2.5 py-1 rounded-md border tabular-nums z-[5] ${currentPnl >= 0 ? "text-[#00d4aa] border-[#00d4aa]/40 bg-[#00d4aa]/8" : "text-red-400 border-red-500/40 bg-red-500/8"}`}>
           {currentPnl >= 0 ? "+" : ""}{currentPnl.toFixed(2)}%
         </div>
-        <div className="absolute inset-0 pt-10">{renderChart()}</div>
+        <div className="absolute inset-0 pt-10"><Chart priceHistory={priceHistory} /></div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 px-5 py-4 border-b border-[#1e293b]">
@@ -349,7 +268,7 @@ export default function FXBlitzGame() {
 
       <div className="grid grid-cols-3 gap-3 px-5 py-3 border-b border-[#1e293b] bg-[#111827]">
         <div className="text-center"><div className="text-[11px] text-[#64748b] uppercase tracking-wider mb-1 font-medium">Trades</div><div className="text-base font-medium text-white tabular-nums">{trades}</div></div>
-        <div className="text-center"><div className="text-[11px] text-[#64748b] uppercase tracking-wider mb-1 font-medium">Best trade</div><div className="text-base font-medium text-white tabular-nums">{bestTrade !== 0 ? `${bestTrade >= 0 ? "+" : ""}${(bestTrade / 100).toFixed(2)}%` : "—"}</div></div>
+        <div className="text-center"><div className="text-[11px] text-[#64748b] uppercase tracking-wider mb-1 font-medium">Best trade</div><div className="text-base font-medium text-white tabular-nums">{bestTrade !== 0 ? `${bestTrade >= 0 ? "+" : ""}${(bestTrade/100).toFixed(2)}%` : "—"}</div></div>
         <div className="text-center"><div className="text-[11px] text-[#64748b] uppercase tracking-wider mb-1 font-medium">Finality</div><div className="text-base font-medium text-[#00d4aa]">&lt;1s</div></div>
       </div>
 
@@ -359,37 +278,113 @@ export default function FXBlitzGame() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3.08c.55 0 1 .45 1 1v13.95h15l.1.01c.5.05.9.48.9 1s-.4.95-.9 1l-.1.01H4a2 2 0 01-2-2V4.08c0-.55.45-1 1-1z" /><path d="M18.26 6.52c.37-.41 1-.45 1.41-.08.42.37.45 1 .08 1.41l-3.88 4.33c-.71.79-1.92.89-2.75.22l-2.2-1.8-3.46 4.06c-.36.42-.99.47-1.41.11a1 1 0 01-.11-1.41l3.46-4.06c.71-.83 1.94-.94 2.79-.25l2.2 1.8 3.87-4.33z" /></svg>
             On-chain leaderboard
           </div>
-          {isContractConfigured && !isFrame && <button onClick={() => refetchLeaderboard()} className="text-[11px] text-[#475569] hover:text-[#00d4aa] transition-colors">Refresh</button>}
+          {!isFrame && <span className="text-[11px] text-[#475569]">Live</span>}
         </div>
-        <LeaderboardList data={leaderboardData} isConfigured={isContractConfigured && !isFrame} />
+        <LeaderboardList data={leaderboardData} isConfigured={!isFrame} />
       </div>
     </div>
   );
 }
 
-function LeaderboardList({ data, isConfigured }: { data: readonly LeaderboardEntry[] | undefined; isConfigured: boolean }) {
-  const demo = [
-    { rank: 1, player: "0x7a3...f2e1", score: 1240 },
-    { rank: 2, player: "0x9b1...c4a2", score: 980 },
-    { rank: 3, player: "0x3d5...e8b0", score: 720 },
-    { rank: 4, player: "0xf2a...1c9d", score: 410 },
-    { rank: 5, player: "0x1e4...a7f3", score: 230 },
-  ];
-
-  const entries = isConfigured && data && data.length > 0
-    ? data.map((e, i) => ({ rank: i + 1, player: `${e.player.slice(0, 5)}...${e.player.slice(-4)}`, score: Number(e.totalScoreBps) }))
-    : demo;
+// --- iframe: без Wagmi ---
+function FrameGame() {
+  const game = useGameLogic();
+  const open = () => window.open("https://arc-fx-blitz-six.vercel.app", "_blank");
 
   return (
-    <div>
-      {entries.map((row) => (
-        <div key={row.rank} className="flex justify-between items-center py-2 border-b border-[#1e293b]/60 last:border-0 text-sm">
-          <span className={`w-6 text-center font-medium ${row.rank <= 3 ? "text-[#00d4aa]" : "text-[#64748b]"}`}>{row.rank}</span>
-          <span className="flex-1 pl-2 text-[#e2e8f0] font-mono text-[13px]">{row.player}</span>
-          <span className="font-medium text-[#00d4aa] tabular-nums text-[13px]">+{(row.score / 100).toFixed(1)}%</span>
-        </div>
-      ))}
-      {!isConfigured && <p className="text-[11px] text-[#475569] mt-2 text-center">Demo data — open in browser for live leaderboard</p>}
-    </div>
+    <GameUI
+      isFrame={true}
+      isConnected={false}
+      connectNode={<button onClick={open} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Open in Browser</button>}
+      submitNode={<button onClick={open} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all">Open in Browser to Submit</button>}
+      leaderboardData={undefined}
+      totalGames={undefined}
+      game={game}
+    />
   );
+}
+
+// --- Браузер: полный Wagmi ---
+function BrowserGame() {
+  const game = useGameLogic();
+  const { address, isConnected } = useAccount();
+  const { connect } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { writeContract, isPending: isSubmitting, error: submitError } = useWriteContract();
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const { data: leaderboardData, refetch: refetchLeaderboard } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: CONTRACT_ABI, functionName: "getLeaderboard", args: [BigInt(5)],
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" },
+  });
+  const { data: totalGames } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: CONTRACT_ABI, functionName: "totalGamesPlayed",
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" },
+  });
+
+  const submitScore = () => {
+    if (!isConnected || !address) return;
+    const { priceHistoryRef, tradeLogRef, totalPnl, trades, bestTrade } = game;
+    const priceHistoryPacked = priceHistoryRef.current.map((p) => BigInt(Math.floor(p * 10000)));
+    const tradeTimestampsPacked = tradeLogRef.current.map((t) => BigInt(t.ts));
+    const tradeDirectionsPacked = tradeLogRef.current.map((t) => t.dir);
+
+    const proofHash = keccak256(
+      encodePacked(
+        ["uint256", "uint256", "bytes32", "bytes32", "bytes32"],
+        [
+          BigInt(Math.max(0, totalPnl)), BigInt(trades),
+          keccak256(encodePacked(["uint256[]"], [priceHistoryPacked])),
+          keccak256(encodePacked(["uint256[]"], [tradeTimestampsPacked])),
+          keccak256(encodePacked(["bool[]"], [tradeDirectionsPacked])),
+        ]
+      )
+    );
+
+    writeContract(
+      { address: CONTRACT_ADDRESS, abi: CONTRACT_ABI, functionName: "submitGame", args: [BigInt(Math.max(0, totalPnl)), BigInt(trades), BigInt(Math.abs(bestTrade)), proofHash] },
+      { onSuccess: (hash) => { setTxHash(hash); refetchLeaderboard(); } }
+    );
+  };
+
+  return (
+    <GameUI
+      isFrame={false}
+      isConnected={isConnected}
+      address={address}
+      connectNode={
+        isConnected
+          ? <button onClick={() => disconnect()} className="text-xs text-red-400 hover:text-red-300">Disconnect</button>
+          : <button onClick={() => connect({ connector: injected() })} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Connect</button>
+      }
+      submitNode={
+        isConnected ? (
+          <button onClick={submitScore} disabled={isSubmitting || !!txHash} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            {isSubmitting ? "Confirm in wallet..." : txHash ? "Submitted!" : "Submit to chain"}
+          </button>
+        ) : (
+          <p className="text-xs text-[#64748b]">Connect wallet to submit score</p>
+        )
+      }
+      leaderboardData={leaderboardData}
+      totalGames={totalGames}
+      game={game}
+    />
+  );
+}
+
+// --- Точка входа ---
+export default function FXBlitzGame() {
+  const [mounted, setMounted] = useState(false);
+  const [isFrame, setIsFrame] = useState(true);
+
+  useEffect(() => {
+    setIsFrame(window.self !== window.top);
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <div className="min-h-screen bg-[#0a0e1a]" />;
+
+  if (isFrame) return <FrameGame />;
+  return <BrowserGame />;
 }
