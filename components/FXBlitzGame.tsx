@@ -64,6 +64,7 @@ interface LeaderboardEntry {
 
 export default function FXBlitzGame() {
   const [isFrame, setIsFrame] = useState(false);
+  const [hasWallet, setHasWallet] = useState(false);
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
@@ -87,7 +88,9 @@ export default function FXBlitzGame() {
   const tradeLogRef = useRef<TradeLog[]>([]);
 
   useEffect(() => {
-    setIsFrame(window.self !== window.top);
+    const frame = window.self !== window.top;
+    setIsFrame(frame);
+    setHasWallet(typeof window !== "undefined" && !!(window as any).ethereum);
   }, []);
 
   const { data: leaderboardData, refetch: refetchLeaderboard } = useReadContract({
@@ -95,14 +98,14 @@ export default function FXBlitzGame() {
     abi: CONTRACT_ABI,
     functionName: "getLeaderboard",
     args: [BigInt(5)],
-    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && !isFrame },
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && (!isFrame || hasWallet) },
   });
 
   const { data: totalGames } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: "totalGamesPlayed",
-    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && !isFrame },
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && (!isFrame || hasWallet) },
   });
 
   const updatePrice = useCallback(() => {
@@ -210,8 +213,21 @@ export default function FXBlitzGame() {
     );
   };
 
-  const openInBrowser = () => {
-    window.open("https://arc-fx-blitz-six.vercel.app", "_blank");
+  const handleConnect = async () => {
+    if (hasWallet) {
+      try {
+        await connect({ connector: injected() });
+      } catch (err) {
+        console.error("Connect failed:", err);
+        openInMetaMask();
+      }
+    } else {
+      openInMetaMask();
+    }
+  };
+
+  const openInMetaMask = () => {
+    window.open("https://metamask.app.link/dapp/arc-fx-blitz-six.vercel.app", "_blank");
   };
 
   const renderChart = () => {
@@ -267,10 +283,10 @@ export default function FXBlitzGame() {
               <span className="text-xs text-[#64748b]">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
               <button onClick={() => disconnect()} className="text-xs text-red-400 hover:text-red-300">Disconnect</button>
             </div>
-          ) : isFrame ? (
-            <button onClick={openInBrowser} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Open in browser</button>
           ) : (
-            <button onClick={() => connect({ connector: injected() })} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Connect</button>
+            <button onClick={handleConnect} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">
+              {isFrame && !hasWallet ? "Open in MetaMask" : "Connect"}
+            </button>
           )}
         </div>
       </div>
@@ -304,7 +320,7 @@ export default function FXBlitzGame() {
                 {isSubmitting ? "Confirm in wallet..." : txHash ? "Submitted!" : "Submit to chain"}
               </button>
             ) : isFrame ? (
-              <button onClick={openInBrowser} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all">
+              <button onClick={openInMetaMask} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all">
                 Open in browser to submit
               </button>
             ) : (
