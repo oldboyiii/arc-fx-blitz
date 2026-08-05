@@ -1,21 +1,17 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjEyMzQsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhZ...",
-    "payload": "eyJkb21haW4iOiJhcmMtZngtYmxpdHoudmVyY2VsLmFwcCJ9",
-    "signature": "MHhY..."
+    "header": "",
+    "payload": "",
+    "signature": ""
   },
   "frame": {
-    "version": "next",
-    "imageUrl": "https://your-domain.com/og.svg",
-    "button": {
-      "title": "Play FX Blitz",
-      "action": {
-        "type": "launch_frame",
-        "name": "Arc FX Blitz",
-        "url": "https://your-domain.com",
-        "splashImageUrl": "https://your-domain.com/og.svg",
-        "splashBackgroundColor": "#0a0e1a"
-      }
-    }
+    "version": "1",
+    "name": "Arc FX Blitz",
+    "iconUrl": "https://arc-fx-blitz-six.vercel.app/og.svg",
+    "homeUrl": "https://arc-fx-blitz-six.vercel.app",
+    "imageUrl": "https://arc-fx-blitz-six.vercel.app/og.svg",
+    "buttonTitle": "🚀 Trade",
+    "splashImageUrl": "https://arc-fx-blitz-six.vercel.app/og.svg",
+    "splashBackgroundColor": "#0a0e1a"
   }
 }
