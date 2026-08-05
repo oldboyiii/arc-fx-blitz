@@ -95,14 +95,14 @@ export default function FXBlitzGame() {
     abi: CONTRACT_ABI,
     functionName: "getLeaderboard",
     args: [BigInt(5)],
-    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" },
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && !isFrame },
   });
 
   const { data: totalGames } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: "totalGamesPlayed",
-    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" },
+    query: { enabled: CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000" && !isFrame },
   });
 
   const updatePrice = useCallback(() => {
@@ -210,6 +210,10 @@ export default function FXBlitzGame() {
     );
   };
 
+  const openInBrowser = () => {
+    window.open("https://arc-fx-blitz-six.vercel.app", "_blank");
+  };
+
   const renderChart = () => {
     if (priceHistory.length < 2) return null;
     const w = 480;
@@ -263,6 +267,8 @@ export default function FXBlitzGame() {
               <span className="text-xs text-[#64748b]">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
               <button onClick={() => disconnect()} className="text-xs text-red-400 hover:text-red-300">Disconnect</button>
             </div>
+          ) : isFrame ? (
+            <button onClick={openInBrowser} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Open in browser</button>
           ) : (
             <button onClick={() => connect({ connector: injected() })} className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90">Connect</button>
           )}
@@ -293,9 +299,13 @@ export default function FXBlitzGame() {
             <div className={`text-[28px] font-medium mb-1 ${totalPnl >= 0 ? "text-[#00d4aa]" : "text-red-500"}`}>{totalPnl >= 0 ? "+" : ""}{(totalPnl / 100).toFixed(2)}%</div>
             <p className="text-sm text-[#64748b] mb-1">{trades} trades executed</p>
             <p className="text-xs text-[#475569] mb-4">Best: {bestTrade >= 0 ? "+" : ""}{(bestTrade / 100).toFixed(2)}%</p>
-            {isConnected && isContractConfigured ? (
+            {isConnected && isContractConfigured && !isFrame ? (
               <button onClick={submitScore} disabled={isSubmitting || !!txHash} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 {isSubmitting ? "Confirm in wallet..." : txHash ? "Submitted!" : "Submit to chain"}
+              </button>
+            ) : isFrame ? (
+              <button onClick={openInBrowser} className="bg-[#00d4aa] text-black px-7 py-2.5 rounded-[10px] font-medium text-sm hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] active:scale-[0.98] transition-all">
+                Open in browser to submit
               </button>
             ) : (
               <p className="text-xs text-[#64748b]">{!isConnected ? "Connect wallet to submit score" : "Configure contract address to submit"}</p>
@@ -333,9 +343,9 @@ export default function FXBlitzGame() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3.08c.55 0 1 .45 1 1v13.95h15l.1.01c.5.05.9.48.9 1s-.4.95-.9 1l-.1.01H4a2 2 0 01-2-2V4.08c0-.55.45-1 1-1z" /><path d="M18.26 6.52c.37-.41 1-.45 1.41-.08.42.37.45 1 .08 1.41l-3.88 4.33c-.71.79-1.92.89-2.75.22l-2.2-1.8-3.46 4.06c-.36.42-.99.47-1.41.11a1 1 0 01-.11-1.41l3.46-4.06c.71-.83 1.94-.94 2.79-.25l2.2 1.8 3.87-4.33z" /></svg>
             On-chain leaderboard
           </div>
-          {isContractConfigured && <button onClick={() => refetchLeaderboard()} className="text-[11px] text-[#475569] hover:text-[#00d4aa] transition-colors">Refresh</button>}
+          {isContractConfigured && !isFrame && <button onClick={() => refetchLeaderboard()} className="text-[11px] text-[#475569] hover:text-[#00d4aa] transition-colors">Refresh</button>}
         </div>
-        <LeaderboardList data={leaderboardData} isConfigured={isContractConfigured} />
+        <LeaderboardList data={leaderboardData} isConfigured={isContractConfigured && !isFrame} />
       </div>
     </div>
   );
@@ -363,7 +373,7 @@ function LeaderboardList({ data, isConfigured }: { data: readonly LeaderboardEnt
           <span className="font-medium text-[#00d4aa] tabular-nums text-[13px]">+{(row.score / 100).toFixed(1)}%</span>
         </div>
       ))}
-      {!isConfigured && <p className="text-[11px] text-[#475569] mt-2 text-center">Demo data — configure contract to see live leaderboard</p>}
+      {!isConfigured && <p className="text-[11px] text-[#475569] mt-2 text-center">Demo data — open in browser for live leaderboard</p>}
     </div>
   );
 }
