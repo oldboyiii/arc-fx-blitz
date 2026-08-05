@@ -13,6 +13,22 @@ export const metadata: Metadata = {
     description: "30-second USDC/EURC trading sprint on Arc Network",
     images: ["/og.svg"],
   },
+  other: {
+    "fc:frame": JSON.stringify({
+      version: "next",
+      imageUrl: "https://arc-fx-blitz-six.vercel.app/og.svg",
+      button: {
+        title: "🚀 Start Trading",
+        action: {
+          type: "launch_frame",
+          name: "Arc FX Blitz",
+          url: "https://arc-fx-blitz-six.vercel.app",
+          splashImageUrl: "https://arc-fx-blitz-six.vercel.app/og.svg",
+          splashBackgroundColor: "#0a0e1a",
+        },
+      },
+    }),
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
