@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAccount, useWriteContract, useReadContract, useConnect, useDisconnect } from "wagmi";
 import { keccak256, encodePacked } from "viem";
+import sdk from "@farcaster/frame-sdk";
+import { config } from "@/components/WagmiProvider";
 
 const CONTRACT_ADDRESS = "0x50e206F15556f06B374acDa943a7655602AF6494" as `0x${string}`;
 
@@ -62,10 +64,9 @@ interface LeaderboardEntry {
 }
 
 export default function FXBlitzGame() {
-  const [mounted, setMounted] = useState(false);
-
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
+  const { connect } = useConnect();
   const { disconnect } = useDisconnect();
   const { writeContract, isPending: isSubmitting, error: submitError } = useWriteContract();
 
@@ -86,9 +87,17 @@ export default function FXBlitzGame() {
   const priceHistoryRef = useRef<number[]>([1.0842]);
   const tradeLogRef = useRef<TradeLog[]>([]);
 
+  // Загружаем Farcaster SDK и говорим Warpcast, что приложение готово
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const load = async () => {
+      await sdk.context;
+      sdk.actions.ready();
+      setIsSDKLoaded(true);
+    };
+    if (!isSDKLoaded) {
+      load();
+    }
+  }, [isSDKLoaded]);
 
   const { data: leaderboardData, refetch: refetchLeaderboard } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -239,8 +248,12 @@ export default function FXBlitzGame() {
 
   const isContractConfigured = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
 
-  if (!mounted) {
-    return <div className="min-h-screen bg-[#0a0e1a]" />;
+  if (!isSDKLoaded) {
+    return (
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <div className="text-[#00d4aa] text-lg animate-pulse">Loading Arc FX Blitz...</div>
+      </div>
+    );
   }
 
   return (
@@ -261,7 +274,7 @@ export default function FXBlitzGame() {
             </div>
           ) : (
             <button 
-              onClick={() => connect({ connector: connectors[0] })} 
+              onClick={() => connect({ connector: config.connectors[0] })} 
               className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90"
             >
               Connect
