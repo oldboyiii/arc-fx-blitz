@@ -7,7 +7,7 @@ const arcTestnet = {
   id: 5042002,
   name: "Arc Testnet",
   nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.testnet.arc.io"] } },
+  rpcUrls: { default: { http: ["https://arc-testnet.drpc.org"] } },
   blockExplorers: { default: { name: "ArcScan", url: "https://testnet.arcscan.app" } },
 };
 
