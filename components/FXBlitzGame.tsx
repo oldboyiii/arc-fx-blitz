@@ -332,7 +332,7 @@ export default function FXBlitzGame() {
   );
 }
 
-function LeaderboardList({ data, isConfigured }: { data: LeaderboardEntry[] | undefined; isConfigured: boolean }) {
+function LeaderboardList({ data, isConfigured }: { data: readonly LeaderboardEntry[] | undefined; isConfigured: boolean }) {
   const demo = [
     { rank: 1, player: "0x7a3...f2e1", score: 1240 },
     { rank: 2, player: "0x9b1...c4a2", score: 980 },
