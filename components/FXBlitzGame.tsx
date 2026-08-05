@@ -274,7 +274,10 @@ export default function FXBlitzGame() {
             </div>
           ) : (
             <button 
-  onClick={() => connect({ connector: config.connectors[0] })} 
+  onClick={() => {
+    const isFrame = typeof window !== "undefined" && window.self !== window.top;
+    connect({ connector: isFrame ? config.connectors[0] : config.connectors[1] });
+  }} 
   className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90"
 >
   Connect
