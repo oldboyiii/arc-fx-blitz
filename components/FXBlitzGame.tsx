@@ -7,7 +7,7 @@ import { keccak256, encodePacked } from "viem";
 // ============================================
 // CONFIG: замени после деплоя через Remix
 // ============================================
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000" as `0x${string}`;
+const CONTRACT_ADDRESS = "0x50e206F15556f06B374acDa943a7655602AF6494" as `0x${string}`;
 
 const CONTRACT_ABI = [
   {
