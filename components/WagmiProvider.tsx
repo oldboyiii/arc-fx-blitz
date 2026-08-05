@@ -2,6 +2,7 @@
 
 import { createConfig, http, WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { injected } from "wagmi/connectors";
 import { frameConnector } from "@/lib/connector";
 
 const arcTestnet = {
@@ -17,7 +18,7 @@ export const config = createConfig({
   transports: {
     [arcTestnet.id]: http(),
   },
-  connectors: [frameConnector()],
+  connectors: [frameConnector(), injected()],
   storage: null,
 });
 
