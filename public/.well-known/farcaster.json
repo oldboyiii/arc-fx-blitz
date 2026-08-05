@@ -7,11 +7,11 @@
   "frame": {
     "version": "1",
     "name": "Arc FX Blitz",
-    "iconUrl": "https://arc-fx-blitz-six.vercel.app/og.svg",
+    "iconUrl": "https://arc-fx-blitz-six.vercel.app/og.png",
     "homeUrl": "https://arc-fx-blitz-six.vercel.app",
-    "imageUrl": "https://arc-fx-blitz-six.vercel.app/og.svg",
+    "imageUrl": "https://arc-fx-blitz-six.vercel.app/og.png",
     "buttonTitle": "🚀 Trade",
-    "splashImageUrl": "https://arc-fx-blitz-six.vercel.app/og.svg",
+    "splashImageUrl": "https://arc-fx-blitz-six.vercel.app/og.png",
     "splashBackgroundColor": "#0a0e1a"
   }
 }
