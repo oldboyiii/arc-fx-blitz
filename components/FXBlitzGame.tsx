@@ -239,7 +239,7 @@ export default function FXBlitzGame() {
   const isContractConfigured = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
 
   return (
-    <div className="max-w-lg mx-auto bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl">
+    <div className="w-full min-h-screen bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl">
       <div className="flex justify-between items-center px-5 py-4 border-b border-[#1e293b] bg-[#111827]">
         <div>
           <div className="flex items-center gap-2.5">
