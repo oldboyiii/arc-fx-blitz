@@ -11,19 +11,19 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Arc FX Blitz",
     description: "30-second USDC/EURC trading sprint on Arc Network",
-    images: ["/og.svg"],
+    images: ["https://arc-fx-blitz-six.vercel.app/og.png"],
   },
   other: {
     "fc:frame": JSON.stringify({
       version: "next",
-      imageUrl: "https://arc-fx-blitz-six.vercel.app/og.svg",
+      imageUrl: "https://arc-fx-blitz-six.vercel.app/og.png",
       button: {
         title: "🚀 Start Trading",
         action: {
           type: "launch_frame",
           name: "Arc FX Blitz",
           url: "https://arc-fx-blitz-six.vercel.app",
-          splashImageUrl: "https://arc-fx-blitz-six.vercel.app/og.svg",
+          splashImageUrl: "https://arc-fx-blitz-six.vercel.app/og.png",
           splashBackgroundColor: "#0a0e1a",
         },
       },
