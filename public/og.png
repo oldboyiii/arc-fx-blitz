@@ -1,22 +1,46 @@
-<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0a0e1a"/>
-      <stop offset="100%" stop-color="#111827"/>
-    </linearGradient>
-    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#00d4aa" stop-opacity="0.3"/>
-      <stop offset="50%" stop-color="#00d4aa" stop-opacity="0.1"/>
-      <stop offset="100%" stop-color="#00d4aa" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect x="100" y="200" width="1000" height="2" fill="url(#glow)"/>
-  <polyline points="100,400 200,380 300,390 400,350 500,360 600,320 700,340 800,300 900,310 1000,280 1100,290" fill="none" stroke="#00d4aa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <polygon points="100,400 200,380 300,390 400,350 500,360 600,320 700,340 800,300 900,310 1000,280 1100,290 1100,500 100,500" fill="#00d4aa" fill-opacity="0.08"/>
-  <text x="600" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="600" fill="#ffffff">Arc FX Blitz</text>
-  <text x="600" y="220" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="400" fill="#64748b">30-second USDC/EURC trading sprint</text>
-  <text x="600" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="500" fill="#00d4aa" letter-spacing="2">ARC NETWORK TESTNET  •  SUB-SECOND FINALITY  •  USDC GAS</text>
-  <rect x="520" y="560" width="160" height="36" rx="18" fill="none" stroke="#00d4aa" stroke-width="1.5"/>
-  <text x="600" y="585" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#00d4aa" letter-spacing="1">PLAY NOW</text>
-</svg>
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
+
+# Создаём холст 1200x630
+img = Image.new('RGB', (1200, 630), color=(10, 14, 26))
+draw = ImageDraw.Draw(img)
+
+# Прямоугольник с градиентом (имитация)
+for i in range(630):
+    ratio = i / 630
+    r = int(10 + (17 - 10) * ratio)
+    g = int(14 + (24 - 14) * ratio)
+    b = int(26 + (39 - 26) * ratio)
+    draw.line([(0, i), (1200, i)], fill=(r, g, b))
+
+# Линия с glow
+draw.rectangle([100, 199, 1100, 201], fill=(0, 212, 170))
+
+# Ломаная линия
+points = [(100,400), (200,380), (300,390), (400,350), (500,360), 
+          (600,320), (700,340), (800,300), (900,310), (1000,280), (1100,290)]
+for i in range(len(points)-1):
+    draw.line([points[i], points[i+1]], fill=(0, 212, 170), width=4)
+
+# Текст (используйте системный шрифт)
+try:
+    font_title = ImageFont.truetype("Arial", 72)
+    font_sub = ImageFont.truetype("Arial", 28)
+    font_tag = ImageFont.truetype("Arial", 20)
+    font_btn = ImageFont.truetype("Arial", 14)
+except:
+    font_title = ImageFont.load_default()
+    font_sub = ImageFont.load_default()
+    font_tag = ImageFont.load_default()
+    font_btn = ImageFont.load_default()
+
+draw.text((600, 160), "Arc FX Blitz", fill="white", anchor="mm", font=font_title)
+draw.text((600, 220), "30-second USDC/EURC trading sprint", fill="#64748b", anchor="mm", font=font_sub)
+draw.text((600, 520), "ARC NETWORK TESTNET  •  SUB-SECOND FINALITY  •  USDC GAS", 
+          fill=(0, 212, 170), anchor="mm", font=font_tag)
+
+# Кнопка
+draw.rectangle([520, 560, 680, 596], outline=(0, 212, 170), width=2)
+draw.text((600, 578), "PLAY NOW", fill=(0, 212, 170), anchor="mm", font=font_btn)
+
+img.save("arc_fx_blitz.png")
