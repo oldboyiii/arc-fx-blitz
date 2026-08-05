@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
+import { useState, useEffect } from "react";
 
 const arcTestnet = {
   id: 5042002,
@@ -16,12 +17,22 @@ const config = createConfig({
   chains: [arcTestnet],
   transports: { [arcTestnet.id]: http() },
   connectors: [injected()],
-  multiInjectedProviderDiscovery: false, // отключаем авто-обнаружение встроенного кошелька
 });
 
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [isFrame, setIsFrame] = useState(false);
+
+  useEffect(() => {
+    setIsFrame(window.self !== window.top);
+  }, []);
+
+  // В iframe Wagmi не используем — не оборачиваем в WagmiProvider
+  if (isFrame) {
+    return <>{children}</>;
+  }
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
