@@ -14,11 +14,7 @@
     "react-dom": "^18.3.0",
     "viem": "^2.13.0",
     "wagmi": "^2.9.0",
-    "@tanstack/react-query": "^5.0.0",
-    "@rainbow-me/rainbowkit": "^2.1.0",
-    "@x402/core": "^0.1.0",
-    "@x402/evm": "^0.1.0",
-    "@x402/svm": "^0.1.0"
+    "@tanstack/react-query": "^5.0.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
