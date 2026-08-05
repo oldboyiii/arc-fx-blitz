@@ -13,6 +13,14 @@ const nextConfig = {
       },
     ];
   },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'react-native': false,
+      'react-native-webview': false,
+    };
+    return config;
+  },
 };
 
 module.exports = nextConfig;
