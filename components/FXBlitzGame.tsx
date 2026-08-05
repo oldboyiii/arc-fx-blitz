@@ -274,11 +274,11 @@ export default function FXBlitzGame() {
             </div>
           ) : (
             <button 
-              onClick={() => connect({ connector: config.connectors[0] })} 
-              className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90"
-            >
-              Connect
-            </button>
+  onClick={() => connect({ connector: config.connectors[0] })} 
+  className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90"
+>
+  Connect
+</button>
           )}
         </div>
       </div>
