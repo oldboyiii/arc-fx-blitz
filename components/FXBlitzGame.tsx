@@ -87,7 +87,6 @@ export default function FXBlitzGame() {
   const priceHistoryRef = useRef<number[]>([1.0842]);
   const tradeLogRef = useRef<TradeLog[]>([]);
 
-  // Загружаем Farcaster SDK и говорим Warpcast, что приложение готово
   useEffect(() => {
     const load = async () => {
       await sdk.context;
@@ -258,13 +257,24 @@ export default function FXBlitzGame() {
 
   return (
     <div className="max-w-lg mx-auto bg-[#0a0e1a] border border-[#1e293b] rounded-xl overflow-hidden text-[#e2e8f0] font-sans shadow-2xl">
+      {/* Header */}
       <div className="flex justify-between items-center px-5 py-4 border-b border-[#1e293b] bg-[#111827]">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-[17px] font-medium text-white tracking-tight">Arc FX Blitz</h1>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded border border-[#00d4aa] text-[#00d4aa] bg-[#00d4aa]/10 tracking-wider uppercase">Arc Testnet</span>
           </div>
-          <p className="text-xs text-[#64748b] mt-1">USDC/EURC — Sub-second finality</p>
+          <p className="text-xs text-[#64748b] mt-1">
+            USDC/EURC — Sub-second finality · 
+            <a 
+              href="https://warpcast.com/oldboyi" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[#00d4aa] hover:underline ml-1"
+            >
+              @oldboyi on Farcaster ↗
+            </a>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {isConnected ? (
@@ -274,18 +284,19 @@ export default function FXBlitzGame() {
             </div>
           ) : (
             <button 
-  onClick={() => {
-    const isFrame = typeof window !== "undefined" && window.self !== window.top;
-    connect({ connector: isFrame ? config.connectors[0] : config.connectors[1] });
-  }} 
-  className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90"
->
-  Connect
-</button>
+              onClick={() => {
+                const isFrame = typeof window !== "undefined" && window.self !== window.top;
+                connect({ connector: isFrame ? config.connectors[0] : config.connectors[1] });
+              }} 
+              className="bg-[#00d4aa] text-black px-3 py-1.5 rounded text-xs font-medium hover:opacity-90"
+            >
+              Connect
+            </button>
           )}
         </div>
       </div>
 
+      {/* Timer */}
       <div className="flex justify-between items-center px-5 py-2 border-b border-[#1e293b] bg-[#0a0e1a]">
         <div className={`text-[28px] font-medium tabular-nums leading-none ${timer < 5 && timer > 0 ? "text-red-500" : "text-[#00d4aa]"}`}>
           {timer.toFixed(1)}
@@ -293,6 +304,7 @@ export default function FXBlitzGame() {
         <div className="text-xs text-[#64748b]">30s sprint</div>
       </div>
 
+      {/* Chart */}
       <div className="relative h-[200px] border-b border-[#1e293b] overflow-hidden">
         {flash && <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-150 ${flash === "green" ? "bg-green-500/[0.08]" : "bg-red-500/[0.08]"}`} />}
         {!running && !gameOver && (
@@ -329,6 +341,7 @@ export default function FXBlitzGame() {
         <div className="absolute inset-0 pt-10">{renderChart()}</div>
       </div>
 
+      {/* Buy/Sell */}
       <div className="grid grid-cols-2 gap-3 px-5 py-4 border-b border-[#1e293b]">
         <button onClick={() => makeTrade("buy")} disabled={!running} className="flex items-center justify-center gap-2 py-3.5 rounded-[10px] border border-green-500/50 bg-green-500/[0.08] text-white font-medium text-[15px] hover:bg-green-500/[0.12] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M11.39 2.36c.35-.35.92-.35 1.27 0l5.54 5.54c.35.35.35.92 0 1.27-.35.35-.92.35-1.27 0l-4-4V21c0 .5-.4.9-.9.9s-.9-.4-.9-.9V5.16l-4.04 4.02c-.35.35-.92.35-1.27 0-.35-.35-.35-.92 0-1.27l5.58-5.55z" /></svg>Buy
@@ -338,12 +351,14 @@ export default function FXBlitzGame() {
         </button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-3 gap-3 px-5 py-3 border-b border-[#1e293b] bg-[#111827]">
         <div className="text-center"><div className="text-[11px] text-[#64748b] uppercase tracking-wider mb-1 font-medium">Trades</div><div className="text-base font-medium text-white tabular-nums">{trades}</div></div>
         <div className="text-center"><div className="text-[11px] text-[#64748b] uppercase tracking-wider mb-1 font-medium">Best trade</div><div className="text-base font-medium text-white tabular-nums">{bestTrade !== 0 ? `${bestTrade >= 0 ? "+" : ""}${(bestTrade / 100).toFixed(2)}%` : "—"}</div></div>
         <div className="text-center"><div className="text-[11px] text-[#64748b] uppercase tracking-wider mb-1 font-medium">Finality</div><div className="text-base font-medium text-[#00d4aa]">&lt;1s</div></div>
       </div>
 
+      {/* Leaderboard */}
       <div className="px-5 py-3">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#64748b]">
@@ -353,6 +368,18 @@ export default function FXBlitzGame() {
           {isContractConfigured && <button onClick={() => refetchLeaderboard()} className="text-[11px] text-[#475569] hover:text-[#00d4aa] transition-colors">Refresh</button>}
         </div>
         <LeaderboardList data={leaderboardData} isConfigured={isContractConfigured} />
+      </div>
+
+      {/* Footer — link to Farcaster */}
+      <div className="px-5 py-3 border-t border-[#1e293b] bg-[#111827] text-center">
+        <a 
+          href="https://warpcast.com/oldboyi" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-xs text-[#64748b] hover:text-[#00d4aa] transition-colors"
+        >
+          Built by @oldboyi · Follow on Farcaster ↗
+        </a>
       </div>
     </div>
   );
